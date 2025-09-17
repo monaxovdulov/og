@@ -4,9 +4,7 @@ import logging
 
 from telebot.types import CallbackQuery
 from .core import bot, logger
-from .keyboards import (
-    NS_MENU, NS_PLAY, NS_TOPICS, NS_SETTINGS, NS_QUESTION, NS_NAV, NS_NOOP 
-)
+from .keyboards import NS_MENU, NS_PLAY, NS_TOPICS, NS_SETTINGS, NS_QUESTION, NS_NAV
 from .handlers import *
 
 # точная константа для noop
@@ -151,7 +149,7 @@ def on_callback(call: CallbackQuery) -> None:
     try:
         bot.answer_callback_query(call.id)
     except Exception as e:
-        logging.getLogger(__name__).debug("answer_callback_query failed: %r", e)
+        logger.debug("answer_callback_query failed: %r", e)
 
     route = parse_cb(call.data)
     ctx = make_ctx(call)
@@ -163,7 +161,7 @@ def on_callback(call: CallbackQuery) -> None:
             return
         router(route.action, route.args, ctx)
     except Exception:
-        logging.getLogger(__name__).exception(
+        logger.exception(
             "Callback handling error: ns=%r action=%r args=%r", route.ns, route.action, route.args
         )
         try:
