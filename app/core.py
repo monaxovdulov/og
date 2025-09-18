@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Final
 from telebot import TeleBot
+from .guard import CallbackShield
 
 # --- logging (простая настройка) ---
 logging.basicConfig(
@@ -21,3 +22,7 @@ if not BOT_TOKEN:
 # --- единый бот на весь проект ---
 bot: Final[TeleBot] = TeleBot(BOT_TOKEN, parse_mode="HTML")
 
+shield: Final[CallbackShield] = CallbackShield(
+    dedup_ttl=0.8,          # блокируем тот же колбэк ~800мс
+    in_flight_timeout=2.0,  # сереализуем обработку колбэков на 2с
+)

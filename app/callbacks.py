@@ -3,7 +3,7 @@ from typing import NamedTuple, Callable, Sequence, Final
 import logging
 
 from telebot.types import CallbackQuery
-from .core import bot, logger
+from .core import bot, logger, shield
 from .keyboards import NS_MENU, NS_PLAY, NS_TOPICS, NS_SETTINGS, NS_QUESTION, NS_NAV
 from .handlers import *
 
@@ -150,10 +150,25 @@ def on_callback(call: CallbackQuery) -> None:
         bot.answer_callback_query(call.id)
     except Exception as e:
         logger.debug("answer_callback_query failed: %r", e)
+        
+    if shield.is_duplicate(call):
+        try:
+            bot.answer_callback_query(call.id, text="Уже обрабатываю…", show_alert=False, cache_time=1)
+        except Exception:
+            pass
+        return
 
     route = parse_cb(call.data)
     ctx = make_ctx(call)
 
+    if not shield.try_acquire(ctx.user_id):
+        try:
+            bot.answer_callback_query(call.id, text="Подождите секунду…", show_alert=False, cache_time=1)
+        except Exception:
+            pass
+        return
+    
+    
     try:
         router = ROUTERS.get(route.ns)
         if router is None or route.ns == NS_NOOP:
@@ -168,3 +183,6 @@ def on_callback(call: CallbackQuery) -> None:
             bot.answer_callback_query(call.id, text="Ошибка обработки")
         except Exception:
             pass
+    finally:
+        # 4) всегда отпускаем — даже при исключениях
+        shield.release(ctx.user_id)
