@@ -5,7 +5,10 @@ from .core import bot, logger
 from . import commands  # noqa: F401
 from . import callbacks # noqa: F401
 
-if __name__ == "__main__":
+def main() -> None:
     logger.info("Starting polling…")
     # infinity_polling удобен для демо; в проде — webhook
     bot.infinity_polling(skip_pending=True, timeout=30)
+
+if __name__ == "__main__":
+    main()
