@@ -1,0 +1,2 @@
+[console_scripts]
+bot = app.__main__:main

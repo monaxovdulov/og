@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+app/__init__.py
+app/__main__.py
+app/callbacks.py
+app/commands.py
+app/core.py
+app/guard.py
+app/handlers.py
+app/keyboards.py
+tg_quiz_bot.egg-info/PKG-INFO
+tg_quiz_bot.egg-info/SOURCES.txt
+tg_quiz_bot.egg-info/dependency_links.txt
+tg_quiz_bot.egg-info/entry_points.txt
+tg_quiz_bot.egg-info/requires.txt
+tg_quiz_bot.egg-info/top_level.txt
