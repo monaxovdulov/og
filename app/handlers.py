@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Final
-from .core import bot
+from telebot.apihelper import ApiTelegramException
+from .core import bot, logger
 from .keyboards import (
     kb_main_menu, kb_play_menu, kb_settings_menu, kb_topics_page,
     kb_question_controls, kb_confirm_skip, kb_results,
@@ -32,6 +33,14 @@ def _reply_user_id(ctx) -> int:
     # если нет chat_id (inline), шлём в личку по user_id
     return ctx.chat_id or ctx.user_id
 
+def _is_not_modified(err: Exception) -> bool:
+    """True, если Telegram вернул 'message is not modified' (для текста или markup)."""
+    if not isinstance(err, ApiTelegramException):
+        return False
+    desc = (getattr(err, "description", "") or "").lower()
+    # встречаются варианты формулировки
+    return "message is not modified" in desc or "message not modified" in desc
+
 def _safe_edit_text(ctx, *, text: str, reply_markup=None) -> None:
     """
     Пытается отредактировать исходное сообщение; если нельзя — отправляем новое.
@@ -42,8 +51,13 @@ def _safe_edit_text(ctx, *, text: str, reply_markup=None) -> None:
                 text=text, chat_id=ctx.chat_id, message_id=ctx.message_id, reply_markup=reply_markup
             )
             return
-        except Exception:
-            pass
+        except Exception as e:
+            # если содержимое не меняется — просто выходим без дубляжа сообщений
+            if _is_not_modified(e):
+                logger.debug("skip send: message is not modified")
+                return
+            # прочие причины — падаем в fallback (например, 'message to edit not found')
+            logger.debug("edit_message_text failed, fallback to send: %r", e)
     bot.send_message(_reply_user_id(ctx), text, reply_markup=reply_markup)
 
 def _safe_edit_kb(ctx, *, reply_markup) -> None:
@@ -54,8 +68,11 @@ def _safe_edit_kb(ctx, *, reply_markup) -> None:
         try:
             bot.edit_message_reply_markup(chat_id=ctx.chat_id, message_id=ctx.message_id, reply_markup=reply_markup)
             return
-        except Exception:
-            pass
+        except Exception as e:
+            if _is_not_modified(e):
+                logger.debug("skip send: reply_markup is not modified")
+                return
+            logger.debug("edit_message_reply_markup failed, fallback to send: %r", e)
     # fallback: отправим пустой текст с клавиатурой
     bot.send_message(_reply_user_id(ctx), "Обновлено", reply_markup=reply_markup)
 
